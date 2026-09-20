@@ -1,0 +1,6 @@
+{
+  "name": "CueMaster Pro",
+  "description": "Production-Ready Snooker & Billiards Club Management System with role-based operations, table tracking, running bills, and financial management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
