@@ -79,8 +79,10 @@ class AuthService {
 
       const data = await response.json();
 
-      if (response.ok && data.success && data.session) {
-        this.setToken(data.session.token);
+      if (response.ok && data.success) {
+        if (data.session?.token) {
+          this.setToken(data.session.token);
+        }
         return {
           success: true,
           session: data.session,

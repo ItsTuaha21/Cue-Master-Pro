@@ -417,9 +417,66 @@ app.post('/api/auth/signup', (req: Request, res: Response) => {
   workspaces.set(workspaceId, newWorkspace);
   users.set(userId, newUser);
 
+  // Generate session for newly registered workspace
+  const token = generateToken();
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  sessions.set(token, {
+    token,
+    user_id: userId,
+    workspace_id: workspaceId,
+    organization_id: orgId,
+    created_at: now,
+    expires_at: expiresAt,
+  });
+
+  const permissions = getPermissionsForRole(newUser.role);
+  const sessionData = {
+    token,
+    user: {
+      id: newUser.id,
+      full_name: newUser.full_name,
+      role: newUser.role,
+      email: newUser.email,
+      phone: newUser.phone,
+      is_active: newUser.is_active,
+      organization_id: newOrg.id,
+      workspace_id: newWorkspace.id,
+      club_id: newWorkspace.id,
+    },
+    workspace: {
+      id: newWorkspace.id,
+      organization_id: newOrg.id,
+      workspace_code: newWorkspace.workspace_code,
+      name: newWorkspace.name,
+      slug: newWorkspace.slug,
+      owner_name: newWorkspace.owner_name,
+      owner_email: newWorkspace.owner_email,
+      owner_phone: newWorkspace.owner_phone,
+      onboarding_status: newWorkspace.onboarding_status,
+      status_reason: newWorkspace.status_reason,
+      created_at: newWorkspace.created_at,
+    },
+    organization: {
+      id: newOrg.id,
+      name: newOrg.name,
+      owner_name: newOrg.owner_name,
+      owner_email: newOrg.owner_email,
+      owner_phone: newOrg.owner_phone,
+      created_at: newOrg.created_at,
+    },
+    permissions,
+    expires_at: expiresAt,
+  };
+
   return res.status(201).json({
     success: true,
     message: 'Club workspace registered successfully. Application is pending review.',
+    token,
+    session: sessionData,
+    user: sessionData.user,
+    workspace: sessionData.workspace,
+    organization: sessionData.organization,
+    permissions,
     workspace_code: workspaceCode,
     onboarding_status: 'pending_review',
     club_name: newOrg.name,
@@ -429,13 +486,14 @@ app.post('/api/auth/signup', (req: Request, res: Response) => {
 
 // 2. LOGIN: Authenticate with Workspace/Club Code + Password
 app.post('/api/auth/login', (req: Request, res: Response) => {
-  const { workspace_code, password } = req.body;
+  const { workspace_code, password, email } = req.body;
 
   if (!workspace_code || !password) {
     return res.status(400).json({ error: 'Workspace / Club Code and password are required.' });
   }
 
   const cleanCode = String(workspace_code).trim().toUpperCase();
+  const cleanEmail = email ? String(email).trim().toLowerCase() : undefined;
   const rateLimitKey = `${req.ip}_${cleanCode}`;
 
   if (!checkRateLimit(rateLimitKey)) {
@@ -458,11 +516,13 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
     return res.status(401).json({ error: 'Invalid Workspace / Club Code or password.' });
   }
 
-  // Find user matching password in that workspace
-  // Support either single-owner lookup or check matching password across users in that workspace
+  // Find user matching password in that workspace (and email if specified)
   let authenticatedUser: ServerUser | undefined;
   for (const u of users.values()) {
     if (u.workspace_id === targetWorkspace.id && u.is_active) {
+      if (cleanEmail && u.email.toLowerCase() !== cleanEmail) {
+        continue;
+      }
       if (verifyPassword(password, u.password_salt, u.password_hash)) {
         authenticatedUser = u;
         break;

@@ -8,7 +8,6 @@ import {
   AlertCircle,
   CheckCircle2,
   X,
-  Mail,
   HelpCircle,
   PlusCircle
 } from 'lucide-react';
@@ -18,8 +17,6 @@ export const LoginPage: React.FC = () => {
   const { login, setActiveView } = useApp();
   const [workspaceCode, setWorkspaceCode] = useState('');
   const [password, setPassword] = useState('');
-  const [email, setEmail] = useState('');
-  const [showEmailField, setShowEmailField] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -40,7 +37,6 @@ export const LoginPage: React.FC = () => {
     const result = await login({
       workspace_code: workspaceCode,
       password,
-      email: showEmailField && email.trim() ? email.trim() : undefined,
     });
 
     setIsSubmitting(false);
@@ -118,31 +114,11 @@ export const LoginPage: React.FC = () => {
                 required
                 value={workspaceCode}
                 onChange={(e) => setWorkspaceCode(e.target.value)}
-                placeholder="e.g. ARENA-01 or club code"
+                placeholder="Enter workspace / club code"
                 className="w-full bg-[#080d0a] border border-emerald-950 focus:border-emerald-500/60 text-white text-xs sm:text-sm rounded-xl pl-10 pr-3.5 py-3 transition focus:outline-none focus:ring-1 focus:ring-emerald-500/40 font-mono uppercase"
               />
             </div>
           </div>
-
-          {showEmailField && (
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Staff Email (Optional)
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                  <Mail className="w-4 h-4 text-emerald-500/60" />
-                </div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. cashier@cuedesk.club"
-                  className="w-full bg-[#080d0a] border border-emerald-950 focus:border-emerald-500/60 text-white text-xs sm:text-sm rounded-xl pl-10 pr-3.5 py-3 transition focus:outline-none focus:ring-1 focus:ring-emerald-500/40 font-mono"
-                />
-              </div>
-            </div>
-          )}
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
@@ -173,16 +149,6 @@ export const LoginPage: React.FC = () => {
                 className="w-full bg-[#080d0a] border border-emerald-950 focus:border-emerald-500/60 text-white text-xs sm:text-sm rounded-xl pl-10 pr-3.5 py-3 transition focus:outline-none focus:ring-1 focus:ring-emerald-500/40 font-mono"
               />
             </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-1">
-            <button
-              type="button"
-              onClick={() => setShowEmailField(!showEmailField)}
-              className="text-[11px] text-slate-400 hover:text-slate-200 transition"
-            >
-              {showEmailField ? '- Hide Staff Email' : '+ Specify Staff Account'}
-            </button>
           </div>
 
           <button
@@ -260,7 +226,7 @@ export const LoginPage: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. ARENA-01"
+                  placeholder="Enter workspace / club code"
                   value={forgotWorkspaceCode}
                   onChange={(e) => setForgotWorkspaceCode(e.target.value)}
                   className="w-full bg-[#080d0a] border border-emerald-950 text-white text-xs rounded-xl px-3 py-2.5 font-mono uppercase"
