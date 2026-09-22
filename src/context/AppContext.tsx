@@ -23,10 +23,27 @@ import {
   UserRole,
   PaymentMethod,
   TableChargeAssignment,
+  WorkspaceTenant,
+  Organization,
+  OnboardingStatus,
+  AuthResponse,
+  ClubSignupInput,
+  LoginCredentials,
 } from '../types';
+import { authService } from '../services/authService';
 
 interface AppContextType {
   currentUser: UserProfile;
+  currentWorkspace: WorkspaceTenant | null;
+  currentOrganization: Organization | null;
+  isAuthenticated: boolean;
+  onboardingStatus: OnboardingStatus | null;
+  isAuthLoading: boolean;
+  login: (credentials: LoginCredentials & { email?: string }) => Promise<AuthResponse>;
+  signup: (input: ClubSignupInput) => Promise<AuthResponse>;
+  logout: () => Promise<void>;
+  refreshAuth: () => Promise<void>;
+  checkAuth: () => Promise<void>;
   switchUserRole: (role: UserRole) => void;
   switchRole: (role: UserRole) => void;
   setRole: (role: UserRole) => void;
@@ -885,11 +902,23 @@ const INITIAL_AUDIT_LOGS: AuditLog[] = [
   },
 ];
 
+const ANONYMOUS_PROFILE: UserProfile = {
+  id: '',
+  club_id: '',
+  full_name: 'Unauthenticated Staff',
+  role: 'cashier',
+  phone: '',
+  email: '',
+  is_active: false,
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
-    const saved = localStorage.getItem('cuedesk_user') || localStorage.getItem('cuemaster_user');
-    return saved ? JSON.parse(saved) : OWNER_PROFILE;
-  });
+  const [currentUser, setCurrentUser] = useState<UserProfile>(ANONYMOUS_PROFILE);
+  const [currentWorkspace, setCurrentWorkspace] = useState<WorkspaceTenant | null>(null);
+  const [currentOrganization, setCurrentOrganization] = useState<Organization | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
 
   const [activeView, setActiveView] = useState<string>('dashboard');
   const [selectedTableForModal, setSelectedTableForModal] = useState<PhysicalTable | null>(null);
@@ -929,18 +958,113 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
 
+  // Authenticate and synchronize session with server
+  const refreshAuth = async () => {
+    setIsAuthLoading(true);
+    try {
+      const res = await authService.getMe();
+      if (res.success && res.session) {
+        setCurrentUser(res.session.user);
+        setCurrentWorkspace(res.session.workspace);
+        setCurrentOrganization(res.session.organization);
+        setIsAuthenticated(true);
+        setOnboardingStatus(res.session.workspace.onboarding_status);
+        if (res.session.workspace.name) {
+          setSettings(prev => ({
+            ...prev,
+            organization_id: res.session!.workspace.organization_id,
+            workspace_id: res.session!.workspace.id,
+            club_name: res.session!.workspace.name,
+          }));
+        }
+      if (res.session.workspace.onboarding_status === 'active') {
+        if (activeView === 'login' || activeView === 'signup' || activeView === 'onboarding_status') {
+          setActiveView('dashboard');
+        }
+      } else {
+        setActiveView('onboarding_status');
+      }
+    } else {
+      setCurrentUser(ANONYMOUS_PROFILE);
+      setCurrentWorkspace(null);
+      setCurrentOrganization(null);
+      setIsAuthenticated(false);
+      setOnboardingStatus(null);
+    }
+  } catch {
+    setCurrentUser(ANONYMOUS_PROFILE);
+    setCurrentWorkspace(null);
+    setCurrentOrganization(null);
+    setIsAuthenticated(false);
+    setOnboardingStatus(null);
+  } finally {
+    setIsAuthLoading(false);
+  }
+};
+
+useEffect(() => {
+  refreshAuth();
+}, []);
+
+const login = async (credentials: LoginCredentials & { email?: string }): Promise<AuthResponse> => {
+  const res = await authService.login(credentials);
+  if (res.success && res.session) {
+    setCurrentUser(res.session.user);
+    setCurrentWorkspace(res.session.workspace);
+    setCurrentOrganization(res.session.organization);
+    setIsAuthenticated(true);
+    setOnboardingStatus(res.session.workspace.onboarding_status);
+    setSettings(prev => ({
+      ...prev,
+      organization_id: res.session!.workspace.organization_id,
+      workspace_id: res.session!.workspace.id,
+      club_name: res.session!.workspace.name,
+    }));
+    if (res.session.workspace.onboarding_status === 'active') {
+      setActiveView('dashboard');
+    } else {
+      setActiveView('onboarding_status');
+    }
+  }
+  return res;
+};
+
+const signup = async (input: ClubSignupInput): Promise<AuthResponse> => {
+  const res = await authService.signup(input);
+  if (res.success && res.session) {
+    setCurrentUser(res.session.user);
+    setCurrentWorkspace(res.session.workspace);
+    setCurrentOrganization(res.session.organization);
+    setIsAuthenticated(true);
+    setOnboardingStatus('pending_review');
+    setSettings(prev => ({
+      ...prev,
+      organization_id: res.session!.workspace.organization_id,
+      workspace_id: res.session!.workspace.id,
+      club_name: res.session!.workspace.name,
+    }));
+    setActiveView('onboarding_status');
+  }
+  return res;
+};
+
+  const logout = async () => {
+    await authService.logout();
+    setCurrentUser(ANONYMOUS_PROFILE);
+    setCurrentWorkspace(null);
+    setCurrentOrganization(null);
+    setIsAuthenticated(false);
+    setOnboardingStatus(null);
+    setActiveView('login');
+  };
+
   // Active Shift for Employee / Cashier
-  const activeShift = shifts.find(s => s.status === 'open' && s.employee_id === currentUser.id) || 
+  const activeShift = shifts.find(s => s.status === 'open' && currentUser.id && s.employee_id === currentUser.id) || 
                       shifts.find(s => s.status === 'open') || null;
 
-  const switchUserRole = (role: UserRole) => {
-    let newUser = OWNER_PROFILE;
-    if (role === 'manager') newUser = MANAGER_PROFILE;
-    else if (role === 'cashier') newUser = EMPLOYEE_PROFILE;
-
-    setCurrentUser(newUser);
-    localStorage.setItem('cuedesk_user', JSON.stringify(newUser));
-    logAudit('USER_ROLE_SWITCH', 'Auth Profile', newUser.id, `Switched interface mode to ${role.toUpperCase()} (${newUser.full_name})`);
+  // Prohibit client-side role tampering
+  const switchUserRole = (_role: UserRole) => {
+    console.warn('[CueDesk Security] Role tampering blocked. Roles are strictly server-authoritative.');
   };
 
   const logAudit = (action: string, entity_name: string, entity_id?: string, details: string = '') => {
@@ -1690,6 +1814,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider
       value={{
         currentUser,
+        currentWorkspace,
+        currentOrganization,
+        isAuthenticated,
+        onboardingStatus,
+        isAuthLoading,
+        login,
+        signup,
+        logout,
+        refreshAuth,
+        checkAuth: refreshAuth,
         switchUserRole,
         activeView,
         setActiveView,

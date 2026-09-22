@@ -21,15 +21,62 @@ import { ReportsPage } from './pages/owner/ReportsPage';
 import { AuditLogsPage } from './pages/owner/AuditLogsPage';
 import { SettingsPage } from './pages/owner/SettingsPage';
 import { LoginPage } from './pages/auth/LoginPage';
+import { SignupPage } from './pages/auth/SignupPage';
+import { OnboardingStatusScreen } from './pages/auth/OnboardingStatusScreen';
 
 const MainLayout: React.FC = () => {
-  const { currentUser, activeView } = useApp();
+  const {
+    currentUser,
+    currentWorkspace,
+    isAuthenticated,
+    onboardingStatus,
+    isAuthLoading,
+    refreshAuth,
+    logout,
+    activeView,
+    setActiveView,
+  } = useApp();
 
-  // If user selected login view
-  if (activeView === 'login') {
+  // 1. Session verification loading state
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-[#060908] flex flex-col items-center justify-center p-4">
+        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-black text-xl mb-4 animate-pulse">
+          8
+        </div>
+        <div className="flex items-center gap-2 text-white font-bold text-base">
+          Cue<span className="text-emerald-400">Desk</span>
+        </div>
+        <div className="text-xs text-slate-400 mt-2 font-mono flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+          <span>Verifying workspace session...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Unauthenticated Public Routing
+  if (!isAuthenticated || !currentUser || !currentUser.id) {
+    if (activeView === 'signup') {
+      return <SignupPage />;
+    }
     return <LoginPage />;
   }
 
+  // 3. Authenticated Tenant Onboarding Status Guard
+  if (onboardingStatus && onboardingStatus !== 'active') {
+    return (
+      <OnboardingStatusScreen
+        status={onboardingStatus}
+        workspace={currentWorkspace}
+        user={currentUser}
+        onRefresh={refreshAuth}
+        onLogout={logout}
+      />
+    );
+  }
+
+  // 4. Role Authorization for Protected Workspace
   const isManagement = currentUser.role === 'owner' || currentUser.role === 'manager';
 
   const renderActiveView = () => {
@@ -50,28 +97,28 @@ const MainLayout: React.FC = () => {
         return <CollectionsPage />;
       case 'approvals':
       case 'requests':
-        return <ApprovalsPage />;
+        return isManagement ? <ApprovalsPage /> : <EmployeeDashboard />;
       case 'products':
-        return <ProductsPage />;
+        return isManagement ? <ProductsPage /> : <EmployeeDashboard />;
       case 'inventory':
-        return <InventoryPage />;
+        return isManagement ? <InventoryPage /> : <EmployeeDashboard />;
       case 'expenses':
-        return <ExpensesPage />;
+        return isManagement ? <ExpensesPage /> : <EmployeeDashboard />;
       case 'members':
       case 'memberships':
       case 'players':
-        return <MembershipsPage />;
+        return isManagement ? <MembershipsPage /> : <EmployeeDashboard />;
       case 'bookings':
-        return <BookingsPage />;
+        return isManagement ? <BookingsPage /> : <EmployeeDashboard />;
       case 'employees':
-        return <EmployeesPage />;
+        return isManagement ? <EmployeesPage /> : <EmployeeDashboard />;
       case 'reports':
-        return <ReportsPage />;
+        return isManagement ? <ReportsPage /> : <EmployeeDashboard />;
       case 'audit':
       case 'audit-logs':
-        return <AuditLogsPage />;
+        return isManagement ? <AuditLogsPage /> : <EmployeeDashboard />;
       case 'settings':
-        return <SettingsPage />;
+        return isManagement ? <SettingsPage /> : <EmployeeDashboard />;
       default:
         return isManagement ? <OwnerDashboard /> : <EmployeeDashboard />;
     }

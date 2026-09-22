@@ -16,6 +16,16 @@ export type OnboardingStatus =
   | 'suspended'
   | 'rejected';
 
+export interface Organization {
+  id: string;
+  name: string;
+  legal_name?: string;
+  contact_email: string;
+  contact_phone: string;
+  created_at: string;
+  status: 'active' | 'pending' | 'suspended';
+}
+
 export interface WorkspaceTenant {
   id: string;
   organization_id: string;
@@ -31,6 +41,49 @@ export interface WorkspaceTenant {
   created_at: string;
   active_until?: string;
   max_tables?: number;
+}
+
+export interface RolePermissions {
+  can_manage_club: boolean;
+  can_manage_staff: boolean;
+  can_void_invoices: boolean;
+  can_approve_collections: boolean;
+  can_manage_settings: boolean;
+  can_view_reports: boolean;
+  can_open_close_shifts: boolean;
+  can_operate_pos: boolean;
+  can_manage_tables: boolean;
+}
+
+export interface AuthSession {
+  token: string;
+  user: UserProfile;
+  workspace: WorkspaceTenant;
+  organization: Organization;
+  permissions: RolePermissions;
+  expires_at: string;
+}
+
+export interface LoginCredentials {
+  workspace_code: string;
+  password: string;
+}
+
+export interface ClubSignupInput {
+  club_name: string;
+  owner_name: string;
+  phone: string;
+  email: string;
+  password: string;
+  confirm_password?: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  message?: string;
+  session?: AuthSession;
+  workspace_code?: string;
+  onboarding_status?: OnboardingStatus;
 }
 
 // Table & Match Types
@@ -144,6 +197,14 @@ export interface CueSale {
 
 // Membership Foundations
 export type MembershipTier = 'basic' | 'silver' | 'gold' | 'vip' | 'custom';
+
+export const MEMBERSHIP_TIER_LABELS: Record<MembershipTier, string> = {
+  basic: 'Basic / Regular',
+  silver: 'Silver',
+  gold: 'Gold',
+  vip: 'VIP',
+  custom: 'Custom',
+};
 
 export type MembershipStatus = 'active' | 'expired' | 'suspended';
 
