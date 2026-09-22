@@ -30,10 +30,12 @@ const MainLayout: React.FC = () => {
     return <LoginPage />;
   }
 
+  const isManagement = currentUser.role === 'owner' || currentUser.role === 'manager';
+
   const renderActiveView = () => {
     switch (activeView) {
       case 'dashboard':
-        return currentUser.role === 'owner' ? <OwnerDashboard /> : <EmployeeDashboard />;
+        return isManagement ? <OwnerDashboard /> : <EmployeeDashboard />;
       case 'tables':
       case 'sessions':
         return <TablesPage />;
@@ -55,6 +57,7 @@ const MainLayout: React.FC = () => {
         return <InventoryPage />;
       case 'expenses':
         return <ExpensesPage />;
+      case 'members':
       case 'memberships':
       case 'players':
         return <MembershipsPage />;
@@ -65,25 +68,26 @@ const MainLayout: React.FC = () => {
       case 'reports':
         return <ReportsPage />;
       case 'audit':
+      case 'audit-logs':
         return <AuditLogsPage />;
       case 'settings':
         return <SettingsPage />;
       default:
-        return currentUser.role === 'owner' ? <OwnerDashboard /> : <EmployeeDashboard />;
+        return isManagement ? <OwnerDashboard /> : <EmployeeDashboard />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen bg-[#060908] text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
       {/* Top Universal Navbar */}
       <Navbar />
 
       <div className="flex-1 flex">
         {/* Dynamic Sidebar based on active role */}
-        {currentUser.role === 'owner' ? <OwnerSidebar /> : <EmployeeSidebar />}
+        {isManagement ? <OwnerSidebar /> : <EmployeeSidebar />}
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-x-hidden min-h-[calc(100vh-61px)]">
+        <main className="flex-1 overflow-x-hidden min-h-[calc(100vh-61px)] bg-[#060908]">
           {renderActiveView()}
         </main>
       </div>

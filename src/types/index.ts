@@ -1,5 +1,39 @@
-export type UserRole = 'owner' | 'employee';
+export type UserRole = 'owner' | 'manager' | 'cashier';
 
+export const ROLE_LABELS: Record<UserRole, string> = {
+  owner: 'Club Owner',
+  manager: 'Manager',
+  cashier: 'Employee / Cashier',
+};
+
+// SaaS Tenancy & Onboarding Status
+export type OnboardingStatus =
+  | 'pending_review'
+  | 'approved'
+  | 'payment_pending'
+  | 'active'
+  | 'expired'
+  | 'suspended'
+  | 'rejected';
+
+export interface WorkspaceTenant {
+  id: string;
+  organization_id: string;
+  workspace_code: string; // e.g. 'ARENA-01'
+  name: string;
+  slug: string;
+  owner_name: string;
+  owner_email: string;
+  owner_phone?: string;
+  onboarding_status: OnboardingStatus;
+  subscription_tier?: 'starter' | 'pro' | 'enterprise';
+  payment_status?: 'paid' | 'pending' | 'overdue';
+  created_at: string;
+  active_until?: string;
+  max_tables?: number;
+}
+
+// Table & Match Types
 export type TableStatus = 'available' | 'occupied' | 'reserved' | 'maintenance' | 'disabled';
 
 export type RateType = 'hourly' | 'per_minute' | 'fixed_frame';
@@ -12,8 +46,150 @@ export type ParticipantType = 'member' | 'guest' | 'walkin';
 
 export type TableChargeAssignment = 'loser_pays' | 'split_equally' | 'single_designated' | 'custom';
 
-export type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'other';
+export type MatchType = '1v1' | '3_rotation' | '4_rotation' | '2v2_team' | 'custom';
 
+export const MATCH_TYPE_LABELS: Record<MatchType, string> = {
+  '1v1': '1 vs 1 Match',
+  '3_rotation': '3 Player Rotation',
+  '4_rotation': '4 Player Rotation',
+  '2v2_team': '2 vs 2 Team Match',
+  'custom': 'Custom / Open Players',
+};
+
+// Payment Foundations
+export type PaymentMethod =
+  | 'cash'
+  | 'jazzcash'
+  | 'easypaisa'
+  | 'bank_transfer'
+  | 'debit_card'
+  | 'credit_card'
+  | 'card'
+  | 'other';
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash: 'Cash Drawer',
+  jazzcash: 'JazzCash Wallet',
+  easypaisa: 'EasyPaisa Wallet',
+  bank_transfer: 'Direct Bank Transfer',
+  debit_card: 'Debit Card (POS)',
+  credit_card: 'Credit Card (POS)',
+  card: 'Card (Legacy POS)',
+  other: 'Other Method',
+};
+
+// Cue Management Types
+export type CueStatus = 'available' | 'rented' | 'sold' | 'maintenance' | 'damaged';
+
+export type CueCondition = 'brand_new' | 'excellent' | 'good' | 'fair' | 'needs_repair';
+
+export type CueCategory =
+  | 'snooker_cue'
+  | 'pool_cue'
+  | 'break_cue'
+  | 'jump_cue'
+  | 'custom_cue'
+  | 'house_cue';
+
+export interface CueAsset {
+  id: string;
+  organization_id?: string;
+  workspace_id?: string;
+  club_id: string;
+  cue_code: string; // e.g. 'CUE-001'
+  name: string; // model / specs
+  category: CueCategory;
+  condition: CueCondition;
+  purchase_cost: number;
+  sale_price: number;
+  rental_price: number;
+  status: CueStatus;
+  notes?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface CueRental {
+  id: string;
+  organization_id?: string;
+  workspace_id?: string;
+  club_id: string;
+  cue_id: string;
+  cue_code: string;
+  session_id?: string;
+  customer_name: string;
+  rented_at: string;
+  returned_at?: string;
+  rental_fee: number;
+  deposit_amount?: number;
+  status: 'active' | 'returned' | 'overdue' | 'lost';
+  assigned_participant_id?: string;
+}
+
+export interface CueSale {
+  id: string;
+  organization_id?: string;
+  workspace_id?: string;
+  club_id: string;
+  cue_id: string;
+  cue_code: string;
+  customer_name: string;
+  sale_price: number;
+  payment_method: PaymentMethod;
+  sold_at: string;
+  invoice_id?: string;
+  receipt_number?: string;
+}
+
+// Membership Foundations
+export type MembershipTier = 'basic' | 'silver' | 'gold' | 'vip' | 'custom';
+
+export type MembershipStatus = 'active' | 'expired' | 'suspended';
+
+export interface MembershipPlan {
+  id: string;
+  organization_id?: string;
+  workspace_id?: string;
+  club_id: string;
+  tier: MembershipTier;
+  name: string;
+  description?: string;
+  duration_days: number;
+  price: number;
+  monthly_price?: number;
+  three_month_price?: number;
+  six_month_price?: number;
+  yearly_price?: number;
+  table_discount_percentage: number;
+  fnb_discount_percentage: number;
+  cue_discount_percentage?: number;
+  free_minutes_allocated?: number;
+  booking_benefits?: string[];
+  renewal_rules?: string;
+  status?: MembershipStatus;
+  is_active: boolean;
+}
+
+export interface Member {
+  id: string;
+  organization_id?: string;
+  workspace_id?: string;
+  club_id: string;
+  membership_number: string;
+  full_name: string;
+  phone: string;
+  email: string;
+  plan_name: string;
+  tier?: MembershipTier;
+  discount_percentage: number;
+  start_date: string;
+  expiry_date: string;
+  is_active: boolean;
+  total_games_played: number;
+}
+
+// Invoice & Financials
 export type InvoiceStatus = 'draft' | 'open' | 'partially_paid' | 'paid' | 'voided' | 'refunded';
 
 export type ShiftStatus = 'open' | 'closed' | 'collection_pending' | 'reconciled';
@@ -31,6 +207,8 @@ export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 export interface UserProfile {
   id: string;
+  organization_id?: string;
+  workspace_id?: string;
   club_id: string;
   full_name: string;
   role: UserRole;
@@ -42,10 +220,12 @@ export interface UserProfile {
 
 export interface TableRate {
   id: string;
+  organization_id?: string;
+  workspace_id?: string;
   club_id: string;
   name: string;
   rate_type: RateType;
-  base_rate: number; // in currency units (e.g. PKR 600/hr)
+  base_rate: number;
   minimum_charge: number;
   peak_multiplier: number;
   is_default: boolean;
@@ -54,6 +234,8 @@ export interface TableRate {
 
 export interface PhysicalTable {
   id: string;
+  organization_id?: string;
+  workspace_id?: string;
   club_id: string;
   table_number: string;
   name: string;
@@ -82,8 +264,8 @@ export interface OrderItem {
   order_id: string;
   product_id: string;
   product_name: string;
-  assigned_participant_id?: string; // Who ordered it!
-  assigned_name?: string; // Display name (e.g., Ahmed, Bilal, Usman)
+  assigned_participant_id?: string;
+  assigned_name?: string;
   is_shared: boolean;
   quantity: number;
   unit_price: number;
@@ -94,6 +276,8 @@ export interface OrderItem {
 
 export interface TableSession {
   id: string;
+  organization_id?: string;
+  workspace_id?: string;
   club_id: string;
   table_id: string;
   table_name: string;
@@ -102,18 +286,20 @@ export interface TableSession {
   rate_name: string;
   rate_price: number;
   rate_type: RateType;
+  match_type?: MatchType;
   opened_by_id: string;
   opened_by_name: string;
   status: SessionStatus;
-  start_time: string; // ISO string
+  start_time: string;
   end_time?: string;
   total_duration_minutes: number;
   frames_played: number;
   table_charge_assignment: TableChargeAssignment;
-  assigned_loser_id?: string; // id of SessionParticipant
+  assigned_loser_id?: string;
   assigned_loser_name?: string;
   table_charge_amount: number;
   fnb_charge_amount: number;
+  cue_charge_amount?: number;
   discount_amount: number;
   final_amount: number;
   participants: SessionParticipant[];
@@ -123,6 +309,8 @@ export interface TableSession {
 
 export interface ProductCategory {
   id: string;
+  organization_id?: string;
+  workspace_id?: string;
   club_id: string;
   name: string;
   display_order: number;
@@ -131,6 +319,8 @@ export interface ProductCategory {
 
 export interface Product {
   id: string;
+  organization_id?: string;
+  workspace_id?: string;
   club_id: string;
   category_id: string;
   category_name: string;
@@ -147,6 +337,8 @@ export interface Product {
 
 export interface InventoryTransaction {
   id: string;
+  organization_id?: string;
+  workspace_id?: string;
   club_id: string;
   product_id: string;
   product_name: string;
@@ -161,7 +353,7 @@ export interface InventoryTransaction {
 
 export interface InvoiceItem {
   id: string;
-  item_type: 'table_time' | 'fnb_product' | 'membership_fee';
+  item_type: 'table_time' | 'fnb_product' | 'cue_rental' | 'cue_sale' | 'membership_fee';
   description: string;
   assigned_to_name?: string;
   quantity: number;
@@ -182,6 +374,8 @@ export interface PaymentRecord {
 
 export interface Invoice {
   id: string;
+  organization_id?: string;
+  workspace_id?: string;
   club_id: string;
   invoice_number: string;
   session_id?: string;
@@ -191,6 +385,7 @@ export interface Invoice {
   subtotal: number;
   table_revenue_subtotal: number;
   fnb_revenue_subtotal: number;
+  cue_revenue_subtotal?: number;
   discount_amount: number;
   tax_amount: number;
   grand_total: number;
@@ -205,6 +400,8 @@ export interface Invoice {
 
 export interface EmployeeShift {
   id: string;
+  organization_id?: string;
+  workspace_id?: string;
   club_id: string;
   employee_id: string;
   employee_name: string;
@@ -226,6 +423,8 @@ export interface EmployeeShift {
 
 export interface CashCollection {
   id: string;
+  organization_id?: string;
+  workspace_id?: string;
   club_id: string;
   collection_number: string;
   shift_id: string;
@@ -242,6 +441,8 @@ export interface CashCollection {
 
 export interface ApprovalRequest {
   id: string;
+  organization_id?: string;
+  workspace_id?: string;
   club_id: string;
   request_type: ApprovalType;
   requested_by_name: string;
@@ -258,6 +459,8 @@ export interface ApprovalRequest {
 
 export interface Expense {
   id: string;
+  organization_id?: string;
+  workspace_id?: string;
   club_id: string;
   expense_number: string;
   recorded_by_name: string;
@@ -271,34 +474,10 @@ export interface Expense {
   created_at: string;
 }
 
-export interface Member {
-  id: string;
-  club_id: string;
-  membership_number: string;
-  full_name: string;
-  phone: string;
-  email: string;
-  plan_name: string;
-  discount_percentage: number;
-  start_date: string;
-  expiry_date: string;
-  is_active: boolean;
-  total_games_played: number;
-}
-
-export interface MembershipPlan {
-  id: string;
-  club_id: string;
-  name: string;
-  duration_days: number;
-  price: number;
-  table_discount_percentage: number;
-  fnb_discount_percentage: number;
-  is_active: boolean;
-}
-
 export interface Booking {
   id: string;
+  organization_id?: string;
+  workspace_id?: string;
   club_id: string;
   table_id: string;
   table_name: string;
@@ -314,6 +493,8 @@ export interface Booking {
 
 export interface AuditLog {
   id: string;
+  organization_id?: string;
+  workspace_id?: string;
   club_id: string;
   actor_name: string;
   actor_role: UserRole;
@@ -325,6 +506,8 @@ export interface AuditLog {
 }
 
 export interface ClubSettings {
+  organization_id?: string;
+  workspace_id?: string;
   club_name: string;
   currency: string;
   currency_symbol: string;

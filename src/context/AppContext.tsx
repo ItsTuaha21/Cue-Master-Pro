@@ -106,20 +106,36 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const OWNER_PROFILE: UserProfile = {
   id: 'user-owner-1',
   club_id: 'club-main',
-  full_name: 'Taha Khan',
+  organization_id: 'org-cuedesk-01',
+  workspace_id: 'cuedesk-main',
+  full_name: 'Club Owner',
   role: 'owner',
   phone: '+92 300 1234567',
-  email: 'owner@cuemaster.club',
+  email: 'owner@cuedesk.club',
+  is_active: true,
+};
+
+const MANAGER_PROFILE: UserProfile = {
+  id: 'user-mgr-1',
+  club_id: 'club-main',
+  organization_id: 'org-cuedesk-01',
+  workspace_id: 'cuedesk-main',
+  full_name: 'Floor Manager',
+  role: 'manager',
+  phone: '+92 311 9876543',
+  email: 'manager@cuedesk.club',
   is_active: true,
 };
 
 const EMPLOYEE_PROFILE: UserProfile = {
   id: 'user-emp-1',
   club_id: 'club-main',
-  full_name: 'Ali Raza',
-  role: 'employee',
+  organization_id: 'org-cuedesk-01',
+  workspace_id: 'cuedesk-main',
+  full_name: 'Cashier Staff',
+  role: 'cashier',
   phone: '+92 321 7654321',
-  email: 'ali.raza@cuemaster.club',
+  email: 'cashier@cuedesk.club',
   is_active: true,
 };
 
@@ -831,8 +847,10 @@ const INITIAL_AUDIT_LOGS: AuditLog[] = [
   {
     id: 'aud-1',
     club_id: 'club-main',
-    actor_name: 'Ali Raza',
-    actor_role: 'employee',
+    organization_id: 'org-cuedesk-01',
+    workspace_id: 'cuedesk-main',
+    actor_name: 'Cashier Staff',
+    actor_role: 'cashier',
     action: 'SESSION_OPENED',
     entity_name: 'Table 4',
     entity_id: 'tbl-4',
@@ -842,8 +860,10 @@ const INITIAL_AUDIT_LOGS: AuditLog[] = [
   {
     id: 'aud-2',
     club_id: 'club-main',
-    actor_name: 'Ali Raza',
-    actor_role: 'employee',
+    organization_id: 'org-cuedesk-01',
+    workspace_id: 'cuedesk-main',
+    actor_name: 'Cashier Staff',
+    actor_role: 'cashier',
     action: 'ORDER_ADDED',
     entity_name: 'Order #o-401',
     entity_id: 'ord-2',
@@ -853,8 +873,10 @@ const INITIAL_AUDIT_LOGS: AuditLog[] = [
   {
     id: 'aud-3',
     club_id: 'club-main',
-    actor_name: 'Ali Raza',
-    actor_role: 'employee',
+    organization_id: 'org-cuedesk-01',
+    workspace_id: 'cuedesk-main',
+    actor_name: 'Cashier Staff',
+    actor_role: 'cashier',
     action: 'LOSER_ASSIGNED',
     entity_name: 'Table 4 Session',
     entity_id: 'sess-table-4',
@@ -865,7 +887,7 @@ const INITIAL_AUDIT_LOGS: AuditLog[] = [
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
-    const saved = localStorage.getItem('cuemaster_user');
+    const saved = localStorage.getItem('cuedesk_user') || localStorage.getItem('cuemaster_user');
     return saved ? JSON.parse(saved) : OWNER_PROFILE;
   });
 
@@ -873,7 +895,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedTableForModal, setSelectedTableForModal] = useState<PhysicalTable | null>(null);
 
   const [settings, setSettings] = useState<ClubSettings>({
-    club_name: 'CueMaster Grand Arena',
+    organization_id: 'org-cuedesk-01',
+    workspace_id: 'cuedesk-main',
+    club_name: 'CueDesk Arena & Lounge',
     currency: 'PKR',
     currency_symbol: 'Rs',
     grace_period_minutes: 5,
@@ -881,7 +905,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     discount_approval_threshold: 10,
     tax_enabled: false,
     tax_percentage: 0,
-    address: 'Plot 14-C, Commercial Avenue, DHA Phase 5, Lahore',
+    address: 'Commercial Avenue, DHA Phase 5',
     phone: '+92 42 35741234',
   });
 
@@ -898,21 +922,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
   const [members, setMembers] = useState<Member[]>(INITIAL_MEMBERS);
   const [membershipPlans] = useState<MembershipPlan[]>([
-    { id: 'plan-1', club_id: 'club-main', name: 'Regular Club Tier', duration_days: 30, price: 2500, table_discount_percentage: 5, fnb_discount_percentage: 0, is_active: true },
-    { id: 'plan-2', club_id: 'club-main', name: 'Gold Tier', duration_days: 90, price: 6500, table_discount_percentage: 10, fnb_discount_percentage: 5, is_active: true },
-    { id: 'plan-3', club_id: 'club-main', name: 'Platinum VIP Tier', duration_days: 365, price: 22000, table_discount_percentage: 20, fnb_discount_percentage: 10, is_active: true },
+    { id: 'plan-1', tier: 'basic', club_id: 'club-main', name: 'Regular Club Tier', duration_days: 30, price: 2500, table_discount_percentage: 5, fnb_discount_percentage: 0, is_active: true },
+    { id: 'plan-2', tier: 'gold', club_id: 'club-main', name: 'Gold Tier', duration_days: 90, price: 6500, table_discount_percentage: 10, fnb_discount_percentage: 5, is_active: true },
+    { id: 'plan-3', tier: 'vip', club_id: 'club-main', name: 'Platinum VIP Tier', duration_days: 365, price: 22000, table_discount_percentage: 20, fnb_discount_percentage: 10, is_active: true },
   ]);
   const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
 
-  // Active Shift for Employee
+  // Active Shift for Employee / Cashier
   const activeShift = shifts.find(s => s.status === 'open' && s.employee_id === currentUser.id) || 
                       shifts.find(s => s.status === 'open') || null;
 
   const switchUserRole = (role: UserRole) => {
-    const newUser = role === 'owner' ? OWNER_PROFILE : EMPLOYEE_PROFILE;
+    let newUser = OWNER_PROFILE;
+    if (role === 'manager') newUser = MANAGER_PROFILE;
+    else if (role === 'cashier') newUser = EMPLOYEE_PROFILE;
+
     setCurrentUser(newUser);
-    localStorage.setItem('cuemaster_user', JSON.stringify(newUser));
+    localStorage.setItem('cuedesk_user', JSON.stringify(newUser));
     logAudit('USER_ROLE_SWITCH', 'Auth Profile', newUser.id, `Switched interface mode to ${role.toUpperCase()} (${newUser.full_name})`);
   };
 

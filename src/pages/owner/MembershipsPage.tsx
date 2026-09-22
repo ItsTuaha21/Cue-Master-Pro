@@ -9,13 +9,15 @@ import {
   Phone,
   Percent,
   Star,
-  UserCheck
+  UserCheck,
+  X
 } from 'lucide-react';
 
 export const MembershipsPage: React.FC = () => {
   const { members, membershipPlans, settings, addMember } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
   // New member form
   const [fullName, setFullName] = useState('');
@@ -50,11 +52,25 @@ export const MembershipsPage: React.FC = () => {
     setFullName('');
     setPhone('');
     setEmail('');
-    alert('Member registered successfully.');
+    setSuccessBanner('Member successfully registered in CueDesk registry.');
+    setTimeout(() => setSuccessBanner(null), 4000);
   };
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-8">
+      {/* Success Notification Banner */}
+      {successBanner && (
+        <div className="p-3.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-between shadow-lg">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="font-semibold">{successBanner}</span>
+          </div>
+          <button onClick={() => setSuccessBanner(null)} className="text-emerald-400 hover:text-white cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
@@ -63,13 +79,13 @@ export const MembershipsPage: React.FC = () => {
             <span>Memberships & Player Loyalty</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Member tiers, discount privileges, advance wallets, and player directories.
+            VIP club tiers, discount privileges, player directory, and CueDesk loyalty cards.
           </p>
         </div>
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md transition"
+          className="bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-amber-950/40 transition cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Register New Member</span>
@@ -79,22 +95,22 @@ export const MembershipsPage: React.FC = () => {
       {/* Plans Tier Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {membershipPlans.map(plan => (
-          <div key={plan.id} className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col justify-between">
+          <div key={plan.id} className="p-5 rounded-2xl bg-[#0e1612] border border-emerald-900/30 flex flex-col justify-between shadow-xl shadow-black/40">
             <div>
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-white text-base flex items-center gap-1.5">
                   <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
                   <span>{plan.name}</span>
                 </h3>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold font-mono">
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30 font-semibold font-mono">
                   {plan.table_discount_percentage}% OFF
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1">Snack discount: {plan.fnb_discount_percentage}% off</p>
+              <p className="text-xs text-slate-400 mt-1">Café discount: {plan.fnb_discount_percentage}% off</p>
             </div>
-            <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+            <div className="mt-4 pt-3 border-t border-emerald-950 flex items-center justify-between">
               <span className="text-xs text-slate-400">{plan.duration_days} Days validity</span>
-              <span className="text-sm font-bold text-white font-mono">
+              <span className="text-sm font-bold text-amber-400 font-mono">
                 {settings.currency_symbol} {plan.price.toLocaleString()}
               </span>
             </div>
@@ -104,21 +120,21 @@ export const MembershipsPage: React.FC = () => {
 
       {/* Search */}
       <div className="relative max-w-md">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           placeholder="Search members by name, card #, or mobile..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          className="w-full bg-slate-900 border border-slate-800 text-white text-xs rounded-xl pl-9 pr-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500"
+          className="w-full bg-[#0e1612] border border-emerald-900/30 text-white text-xs rounded-xl pl-9 pr-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500"
         />
       </div>
 
       {/* Members Table */}
-      <div className="border border-slate-800 rounded-2xl overflow-hidden bg-slate-900 shadow-md">
+      <div className="border border-emerald-900/30 rounded-2xl overflow-hidden bg-[#0e1612] shadow-xl shadow-black/40">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-800/80 text-slate-400 font-semibold border-b border-slate-800">
+            <thead className="bg-[#080d0a] text-slate-400 font-semibold border-b border-emerald-950">
               <tr>
                 <th className="py-3 px-4">Member #</th>
                 <th className="py-3 px-4">Player Name</th>
@@ -129,13 +145,13 @@ export const MembershipsPage: React.FC = () => {
                 <th className="py-3 px-4 text-center">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-emerald-950/60">
               {filteredMembers.map(m => (
-                <tr key={m.id} className="hover:bg-slate-850/50 transition">
+                <tr key={m.id} className="hover:bg-[#121c17]/50 transition">
                   <td className="py-3 px-4 font-mono font-bold text-amber-300">{m.membership_number}</td>
                   <td className="py-3 px-4 font-bold text-white">
                     <div>{m.full_name}</div>
-                    {m.email && <div className="text-[10px] text-slate-400 font-normal">{m.email}</div>}
+                    {m.email && <div className="text-[10px] text-slate-500 font-normal">{m.email}</div>}
                   </td>
                   <td className="py-3 px-4 text-slate-300 font-mono">{m.phone}</td>
                   <td className="py-3 px-4 font-semibold text-slate-200">{m.plan_name}</td>
@@ -147,7 +163,7 @@ export const MembershipsPage: React.FC = () => {
                   </td>
                   <td className="py-3 px-4 text-center">
                     <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                      m.is_active ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'
+                      m.is_active ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'
                     }`}>
                       {m.is_active ? 'Active' : 'Expired'}
                     </span>
@@ -161,9 +177,14 @@ export const MembershipsPage: React.FC = () => {
 
       {/* REGISTER MEMBER MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 space-y-4">
-            <h3 className="text-base font-bold text-white">Register Club Member</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="relative w-full max-w-md bg-[#0e1612] border border-emerald-900/40 rounded-2xl p-6 space-y-4 shadow-2xl shadow-black/80">
+            <div className="flex items-center justify-between border-b border-emerald-950 pb-3">
+              <h3 className="text-base font-bold text-white">Register Club Member</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
             <form onSubmit={handleAddMember} className="space-y-4">
               <div>
@@ -174,7 +195,7 @@ export const MembershipsPage: React.FC = () => {
                   placeholder="e.g. Daniyal Sheikh"
                   value={fullName}
                   onChange={e => setFullName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 text-white text-xs rounded-xl p-2.5"
+                  className="w-full bg-[#080d0a] border border-emerald-900/40 text-white text-xs rounded-xl p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
               </div>
 
@@ -186,7 +207,7 @@ export const MembershipsPage: React.FC = () => {
                   placeholder="e.g. +92 300 1234567"
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 text-white text-xs rounded-xl p-2.5"
+                  className="w-full bg-[#080d0a] border border-emerald-900/40 text-white text-xs rounded-xl p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
               </div>
 
@@ -194,10 +215,10 @@ export const MembershipsPage: React.FC = () => {
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Email (Optional)</label>
                 <input
                   type="email"
-                  placeholder="e.g. player@cuemaster.pk"
+                  placeholder="e.g. player@cuedesk.com"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 text-white text-xs rounded-xl p-2.5"
+                  className="w-full bg-[#080d0a] border border-emerald-900/40 text-white text-xs rounded-xl p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
               </div>
 
@@ -206,29 +227,29 @@ export const MembershipsPage: React.FC = () => {
                 <select
                   value={selectedPlanId}
                   onChange={e => setSelectedPlanId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 text-white text-xs rounded-xl p-2.5"
+                  className="w-full bg-[#080d0a] border border-emerald-900/40 text-white text-xs rounded-xl p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500"
                 >
                   {membershipPlans.map(plan => (
                     <option key={plan.id} value={plan.id}>
-                      {plan.name} ({plan.table_discount_percentage}% off) — {settings.currency_symbol} {plan.price}
+                      {plan.name} ({plan.table_discount_percentage}% discount)
                     </option>
                   ))}
                 </select>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="pt-3 border-t border-emerald-950 flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-xs text-slate-400 hover:text-white"
+                  className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs"
+                  className="bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs shadow-md shadow-amber-950/40 transition cursor-pointer"
                 >
-                  Register & Activate
+                  Complete Registration
                 </button>
               </div>
             </form>

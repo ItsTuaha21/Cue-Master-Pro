@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TableSession, PhysicalTable, PaymentMethod } from '../../types';
+import { TableSession, PhysicalTable, PaymentMethod, PAYMENT_METHOD_LABELS } from '../../types';
 import { useApp } from '../../context/AppContext';
 import {
   X,
@@ -7,7 +7,6 @@ import {
   Receipt,
   CheckCircle,
   Printer,
-  ArrowRight,
   Wallet,
   Building,
   UserCheck,
@@ -55,7 +54,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     const isLoser = p.is_loser && session.table_charge_assignment === 'loser_pays';
     const tableShare = isLoser
       ? session.table_charge_amount
-      : (session.table_charge_assignment === 'split_equally' ? session.table_charge_amount / players.length : 0);
+      : (session.table_charge_assignment === 'split_equally' ? session.table_charge_amount / (players.length || 1) : 0);
     return {
       participant: p,
       snacksTotal: snacks,
@@ -66,6 +65,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   });
 
   const [individualTenders, setIndividualTenders] = useState(participantDues);
+
+  const supportedMethods: PaymentMethod[] = [
+    'cash',
+    'jazzcash',
+    'easypaisa',
+    'bank_transfer',
+    'debit_card',
+    'credit_card',
+  ];
 
   const handleProcessCheckout = () => {
     // 1. Close session and create invoice
@@ -88,7 +96,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         tenders.push({ payerName: singlePayerName, method: 'cash', amount: cashTender });
       }
       if (cardTender > 0) {
-        tenders.push({ payerName: singlePayerName, method: 'card', amount: cardTender });
+        tenders.push({ payerName: singlePayerName, method: 'debit_card', amount: cardTender });
       }
     } else if (settlementMode === 'individual') {
       tenders = individualTenders.map(t => ({
@@ -105,20 +113,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto">
+      <div className="relative w-full max-w-2xl bg-[#0e1612] border border-emerald-900/40 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] shadow-black/80">
         {/* Header */}
-        <div className="bg-slate-800/90 border-b border-slate-700 px-6 py-4 flex items-center justify-between">
+        <div className="bg-[#080d0a] border-b border-emerald-900/30 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <div className="w-9 h-9 rounded-xl bg-emerald-950 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
               <Receipt className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">Checkout & Settlement</h3>
-              <p className="text-xs text-slate-400">{session.table_number} • Combined Table Invoice</p>
+              <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">Checkout & Settlement</h3>
+              <p className="text-xs text-slate-400">{session.table_number} • CueDesk Settlement</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -128,19 +136,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {!completedInvoiceId ? (
             <>
               {/* Grand Total Highlight */}
-              <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+              <div className="bg-[#080d0a] border border-emerald-900/40 rounded-2xl p-4 flex items-center justify-between">
                 <div>
-                  <div className="text-xs text-slate-400 uppercase font-semibold">Total Amount Due</div>
+                  <div className="text-xs text-slate-400 uppercase font-bold tracking-wider font-mono">Total Amount Due</div>
                   <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono mt-0.5">
                     {settings.currency_symbol} {session.final_amount.toLocaleString()}
                   </div>
                   <div className="text-[11px] text-slate-400 mt-1">
-                    Table Time: {settings.currency_symbol} {session.table_charge_amount} + F&B Orders: {settings.currency_symbol} {session.fnb_charge_amount}
+                    Table: {settings.currency_symbol} {session.table_charge_amount.toLocaleString()} + Café: {settings.currency_symbol} {session.fnb_charge_amount.toLocaleString()}
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-amber-950/80 text-amber-300 border border-amber-500/40">
                     {session.table_charge_assignment === 'loser_pays' ? `Loser: ${session.assigned_loser_name}` : 'Equal Split'}
                   </span>
                 </div>
@@ -148,49 +156,49 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               {/* Settlement Mode Selection */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                  Select Settlement Method
+                <label className="block text-xs font-bold uppercase tracking-wider text-emerald-400/90 mb-2 font-mono">
+                  Settlement Allocation Mode
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setSettlementMode('single')}
-                    className={`p-3 rounded-xl border text-left transition ${
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
                       settlementMode === 'single'
-                        ? 'bg-emerald-600/20 border-emerald-500 text-white font-bold'
-                        : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                        ? 'bg-emerald-950/70 border-emerald-400 text-white font-bold ring-1 ring-emerald-400/30'
+                        : 'bg-[#080d0a] border-emerald-950/80 text-slate-300 hover:border-emerald-800'
                     }`}
                   >
                     <UserCheck className="w-4 h-4 text-emerald-400 mb-1" />
-                    <div className="text-xs">One Person Pays All</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5 font-normal">e.g. Bilal pays Rs {session.final_amount}</div>
+                    <div className="text-xs font-semibold">Single Payer</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5 font-normal">One person pays all</div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setSettlementMode('individual')}
-                    className={`p-3 rounded-xl border text-left transition ${
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
                       settlementMode === 'individual'
-                        ? 'bg-emerald-600/20 border-emerald-500 text-white font-bold'
-                        : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                        ? 'bg-emerald-950/70 border-emerald-400 text-white font-bold ring-1 ring-emerald-400/30'
+                        : 'bg-[#080d0a] border-emerald-950/80 text-slate-300 hover:border-emerald-800'
                     }`}
                   >
                     <Users className="w-4 h-4 text-amber-400 mb-1" />
-                    <div className="text-xs">Individual Items</div>
+                    <div className="text-xs font-semibold">Individual Tabs</div>
                     <div className="text-[10px] text-slate-400 mt-0.5 font-normal">Each pays own order</div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setSettlementMode('split_tender')}
-                    className={`p-3 rounded-xl border text-left transition ${
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
                       settlementMode === 'split_tender'
-                        ? 'bg-emerald-600/20 border-emerald-500 text-white font-bold'
-                        : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                        ? 'bg-emerald-950/70 border-emerald-400 text-white font-bold ring-1 ring-emerald-400/30'
+                        : 'bg-[#080d0a] border-emerald-950/80 text-slate-300 hover:border-emerald-800'
                     }`}
                   >
-                    <Split className="w-4 h-4 text-blue-400 mb-1" />
-                    <div className="text-xs">Multi-Tender Split</div>
+                    <Split className="w-4 h-4 text-sky-400 mb-1" />
+                    <div className="text-xs font-semibold">Split Tender</div>
                     <div className="text-[10px] text-slate-400 mt-0.5 font-normal">Cash + Card split</div>
                   </button>
                 </div>
@@ -198,35 +206,32 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               {/* MODE 1: ONE PERSON PAYS ALL */}
               {settlementMode === 'single' && (
-                <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700 space-y-4">
+                <div className="bg-[#080d0a] p-4 rounded-xl border border-emerald-950 space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Payer Name</label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Primary Payer Name</label>
                     <input
                       type="text"
                       value={singlePayerName}
                       onChange={e => setSinglePayerName(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 text-white text-xs rounded-xl p-2.5 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full bg-[#0c120f] border border-emerald-900/40 text-white text-xs rounded-xl p-2.5 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
-                    <p className="text-[11px] text-slate-400 mt-1">
-                      Note: Even though {singlePayerName} pays the full bill, individual snack ownership (Ahmed -&gt; Pepsi, Hamza -&gt; Chips) is permanently preserved in the audit database.
-                    </p>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Payment Method</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(['cash', 'card', 'bank_transfer'] as PaymentMethod[]).map(method => (
+                    <label className="block text-xs font-semibold text-slate-300 mb-2">Payment Method</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {supportedMethods.map(method => (
                         <button
                           key={method}
                           type="button"
                           onClick={() => setSinglePaymentMethod(method)}
-                          className={`py-2 px-3 rounded-lg border text-xs font-semibold uppercase tracking-wider transition ${
+                          className={`py-2 px-2.5 rounded-xl border text-xs font-semibold transition cursor-pointer ${
                             singlePaymentMethod === method
-                              ? 'bg-emerald-600 text-white border-emerald-500'
-                              : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'
+                              ? 'bg-emerald-600 text-white border-emerald-400 shadow-sm'
+                              : 'bg-[#0c120f] border-emerald-950 text-slate-400 hover:text-white'
                           }`}
                         >
-                          {method.replace('_', ' ')}
+                          {PAYMENT_METHOD_LABELS[method]}
                         </button>
                       ))}
                     </div>
@@ -238,16 +243,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {settlementMode === 'individual' && (
                 <div className="space-y-2">
                   <div className="text-xs font-semibold text-slate-300 mb-1">
-                    Each Person Settles Their Own Balance:
+                    Each Patron Settles Their Assigned Total:
                   </div>
                   <div className="space-y-1.5 max-h-56 overflow-y-auto">
                     {individualTenders.map((due, idx) => (
-                      <div key={idx} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-xs">
+                      <div key={idx} className="p-3 rounded-xl bg-[#080d0a] border border-emerald-950 flex items-center justify-between text-xs">
                         <div>
                           <div className="font-bold text-white">{due.participant.display_name}</div>
                           <div className="text-[11px] text-slate-400">
                             {due.tableShare > 0 && `Table: ${settings.currency_symbol} ${due.tableShare} `}
-                            {due.snacksTotal > 0 && `Snacks: ${settings.currency_symbol} ${due.snacksTotal}`}
+                            {due.snacksTotal > 0 && `Café: ${settings.currency_symbol} ${due.snacksTotal}`}
                           </div>
                         </div>
 
@@ -261,11 +266,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                               const newMethod = e.target.value as PaymentMethod;
                               setIndividualTenders(prev => prev.map((item, i) => i === idx ? { ...item, method: newMethod } : item));
                             }}
-                            className="bg-slate-900 border border-slate-700 text-white text-[11px] rounded-lg px-2 py-1"
+                            className="bg-[#0c120f] border border-emerald-900/40 text-white text-[11px] rounded-lg px-2 py-1"
                           >
-                            <option value="cash">Cash</option>
-                            <option value="card">Card</option>
-                            <option value="bank_transfer">Bank Transfer</option>
+                            {supportedMethods.map(m => (
+                              <option key={m} value={m}>{PAYMENT_METHOD_LABELS[m]}</option>
+                            ))}
                           </select>
                         </div>
                       </div>
@@ -276,40 +281,28 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               {/* MODE 3: MULTI-TENDER SPLIT */}
               {settlementMode === 'split_tender' && (
-                <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700 space-y-4">
+                <div className="bg-[#080d0a] p-4 rounded-xl border border-emerald-950 space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Cash Tendered</label>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Cash Tender ({settings.currency_symbol})</label>
                       <input
                         type="number"
-                        min="0"
-                        max={session.final_amount}
                         value={cashTender}
-                        onChange={e => {
-                          const val = Math.max(0, parseInt(e.target.value) || 0);
-                          setCashTender(val);
-                          setCardTender(Math.max(0, session.final_amount - val));
-                        }}
-                        className="w-full bg-slate-900 border border-slate-700 text-white font-mono text-sm font-bold rounded-xl p-2.5"
+                        onChange={e => setCashTender(Number(e.target.value))}
+                        className="w-full bg-[#0c120f] border border-emerald-900/40 text-white text-xs rounded-xl p-2.5 font-mono"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Card / Transfer Tendered</label>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Digital/Card Tender ({settings.currency_symbol})</label>
                       <input
                         type="number"
-                        min="0"
-                        max={session.final_amount}
                         value={cardTender}
-                        onChange={e => {
-                          const val = Math.max(0, parseInt(e.target.value) || 0);
-                          setCardTender(val);
-                          setCashTender(Math.max(0, session.final_amount - val));
-                        }}
-                        className="w-full bg-slate-900 border border-slate-700 text-white font-mono text-sm font-bold rounded-xl p-2.5"
+                        onChange={e => setCardTender(Number(e.target.value))}
+                        className="w-full bg-[#0c120f] border border-emerald-900/40 text-white text-xs rounded-xl p-2.5 font-mono"
                       />
                     </div>
                   </div>
-                  <div className="text-xs text-slate-400 flex items-center justify-between pt-2 border-t border-slate-700">
+                  <div className="text-xs text-slate-400 flex items-center justify-between pt-2 border-t border-emerald-950">
                     <span>Sum of Tenders:</span>
                     <span className={`font-mono font-bold ${cashTender + cardTender === session.final_amount ? 'text-emerald-400' : 'text-rose-400'}`}>
                       {settings.currency_symbol} {cashTender + cardTender} / {settings.currency_symbol} {session.final_amount}
@@ -330,10 +323,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
 
               {/* Receipt Preview Card */}
-              <div className="max-w-sm mx-auto p-4 bg-slate-950 border border-slate-800 rounded-xl text-left text-xs font-mono text-slate-300 space-y-2">
-                <div className="text-center font-bold text-white border-b border-slate-800 pb-2">
-                  {settings.club_name.toUpperCase()}
-                  <div className="text-[10px] text-slate-400 font-normal">Official Club Receipt</div>
+              <div className="max-w-sm mx-auto p-4 bg-[#080d0a] border border-emerald-900/40 rounded-xl text-left text-xs font-mono text-slate-300 space-y-2">
+                <div className="text-center font-bold text-white border-b border-emerald-950 pb-2">
+                  <div className="text-emerald-400 font-black tracking-tight text-sm">CUEDESK POS</div>
+                  <div>{settings.club_name.toUpperCase()}</div>
+                  <div className="text-[10px] text-slate-500 font-normal">Official Club Receipt</div>
                 </div>
                 <div className="flex justify-between text-[11px]">
                   <span>Table:</span>
@@ -344,10 +338,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span>{settings.currency_symbol} {session.table_charge_amount}</span>
                 </div>
                 <div className="flex justify-between text-[11px]">
-                  <span>Snacks & Drinks:</span>
+                  <span>Café Orders:</span>
                   <span>{settings.currency_symbol} {session.fnb_charge_amount}</span>
                 </div>
-                <div className="flex justify-between text-[11px] font-bold text-emerald-400 border-t border-slate-800 pt-1">
+                <div className="flex justify-between text-[11px] font-bold text-emerald-400 border-t border-emerald-950 pt-1">
                   <span>Grand Total:</span>
                   <span>{settings.currency_symbol} {session.final_amount}</span>
                 </div>
@@ -357,39 +351,39 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="bg-slate-950 border-t border-slate-800 px-6 py-4 flex items-center justify-between">
+        <div className="bg-[#080d0a] border-t border-emerald-900/30 px-6 py-4 flex items-center justify-between">
           {!completedInvoiceId ? (
             <>
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white"
+                className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleProcessCheckout}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2.5 rounded-xl text-xs sm:text-sm shadow-lg shadow-emerald-950/50 flex items-center gap-2"
+                className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold px-6 py-2.5 rounded-xl text-xs sm:text-sm shadow-lg shadow-emerald-950/60 flex items-center gap-2 border border-emerald-400/20 cursor-pointer"
               >
                 <CreditCard className="w-4 h-4" />
-                <span>Confirm Payment of {settings.currency_symbol} {session.final_amount}</span>
+                <span>Confirm Settlement ({settings.currency_symbol} {session.final_amount.toLocaleString()})</span>
               </button>
             </>
           ) : (
             <div className="w-full flex items-center justify-between">
               <button
                 onClick={() => window.print()}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5"
+                className="px-4 py-2 bg-[#121d17] hover:bg-[#182820] text-emerald-300 border border-emerald-800/40 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
-                Print Thermal Receipt
+                Print Receipt
               </button>
               <button
                 onClick={onClose}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-5 py-2.5 rounded-xl"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2 rounded-xl text-xs cursor-pointer"
               >
-                Done / Back to Floor
+                Done
               </button>
             </div>
           )}
